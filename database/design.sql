@@ -1,5 +1,7 @@
 CREATE SCHEMA IF NOT EXISTS vitaguard;
 
+USE vitaguard;
+
 -- Table Provinces
 CREATE TABLE `provinces` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -26,12 +28,15 @@ CREATE TABLE `districts` (
 CREATE TABLE `users` (
     `username` VARCHAR(50) PRIMARY KEY,
     `password_hashed` VARCHAR(255) NOT NULL,
+
     `email` VARCHAR(100) NOT NULL UNIQUE,
     `phone_number` VARCHAR(20),
-    `role` ENUM('member', 'doctor') DEFAULT 'member',
+
+    `role` ENUM('member', 'doctor','facility_admin','admin') DEFAULT 'member',
     `status` ENUM('active', 'suspended') DEFAULT 'active',
+
     `last_login_at` TIMESTAMP NULL,
-    `email_verified_at` TIMESTAMP NULL,
+
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL
@@ -40,13 +45,17 @@ CREATE TABLE `users` (
 -- Table Members
 CREATE TABLE `members` (
     `username` VARCHAR(50) PRIMARY KEY,
+
     `first_name` VARCHAR(100) NOT NULL,
     `middle_name` VARCHAR(100),
     `last_name` VARCHAR(100) NOT NULL,
+
+    `gender` ENUM('male', 'female') NOT NULL,
+    `date_of_birth` DATE NOT NULL,
+
     `address` VARCHAR(255) NOT NULL,
     `district_id` INT NOT NULL,
-    `date_of_birth` DATE,
-    `gender` ENUM('male', 'female') NOT NULL,
+
     `blood_type` ENUM(
         'A+',
         'A-',
@@ -57,40 +66,103 @@ CREATE TABLE `members` (
         'O+',
         'O-'
     ),
-    `weight_kg` DECIMAL(5, 2),
-    `height_cm` DECIMAL(5, 2),
-    `smoking_status` ENUM('never', 'former', 'current'),
+    `weight_kg` DECIMAL(5, 2) NOT NULL,
+    `height_cm` DECIMAL(5, 2) NOT NULL,
+    `smoking_status` ENUM('never', 'former', 'current') NOT NULL,
     `alcohol_consumption` ENUM(
         'none',
         'light',
         'moderate',
         'heavy'
-    ),
+    ) NOT NULL,
+
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP,
+
     CONSTRAINT `fk_members_users` FOREIGN KEY (`username`) REFERENCES `users` (`username`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_members_district` FOREIGN KEY (`district_id`) REFERENCES `districts` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
--- TODO: Table Medical Histories
--- TODO: Table Allergies
--- TODO: Table Current_Medications
+-- Table Medical Histories
+CREATE TABLE `medical_histories` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+
+    `member_username` VARCHAR(50) NOT NULL,
+
+    `diagnosed_date` DATE NOT NULL,
+    `description` TEXT NOT NULL,
+    `inputted_by` VARCHAR(50) NOT NULL,
+
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP,
+
+    CONSTRAINT `fk_medical_histories_member` FOREIGN KEY (`member_username`) REFERENCES `members` (`username`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_medical_histories_users` FOREIGN KEY (`inputted_by`) REFERENCES `users` (`username`) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- Table Medicines
+CREATE TABLE `medicines` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+
+    `name` VARCHAR(100) NOT NULL UNIQUE,
+    `class` ENUM('') NOT NULL,
+    `description` TEXT NOT NULL,
+
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Table Allergens
+CREATE TABLE `allergens` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(100) NOT NULL UNIQUE
+);
+
+-- Table Member Allergies
+CREATE TABLE `member_allergies` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+
+    `member_username` VARCHAR(50) NOT NULL,
+
+    `allergen_id` BIGINT NOT NULL,
+    `severity` ENUM('mild', 'moderate', 'severe'),
+    `notes` TEXT,
+
+    `inputted_by` VARCHAR(50) NOT NULL,
+
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP,
+
+    CONSTRAINT `fk_member_allergies_member` FOREIGN KEY (`member_username`) REFERENCES `members` (`username`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_member_allergies_allergen` FOREIGN KEY (`allergen_id`) REFERENCES `allergens` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT `fk_member_allergies_inputted_by` FOREIGN KEY (`inputted_by`) REFERENCES `users` (`username`) ON DELETE CASCADE ON UPDATE CASCADE
+);
 
 -- Table Doctors
 CREATE TABLE `doctors` (
     `username` VARCHAR(50) PRIMARY KEY,
+
     `prefix_name` VARCHAR(20),
     `first_name` VARCHAR(100) NOT NULL,
     `middle_name` VARCHAR(100),
     `last_name` VARCHAR(100) NOT NULL,
     `suffix_name` VARCHAR(100),
+
+    `date_of_birth` DATE NOT NULL,
+
     `address` VARCHAR(255) NOT NULL,
     `district_id` INT NOT NULL,
-    `date_of_birth` DATE,
+
     `rating_avg` DECIMAL(3, 2),
     `rating_count` INT DEFAULT 0,
+
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP,
+
     CONSTRAINT `fk_doctors_users` FOREIGN KEY (`username`) REFERENCES `users` (`username`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_doctors_district` FOREIGN KEY (`district_id`) REFERENCES `districts` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
 );
@@ -105,29 +177,38 @@ CREATE TABLE `specialties` (
 CREATE TABLE `doctor_specialties` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `username` VARCHAR(50),
+
     `specialty_id` INT,
+
     CONSTRAINT `fk_doctor_specialties_username` FOREIGN KEY (`username`) REFERENCES `doctors` (`username`) ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT `fk_doctor_specialties_id` FOREIGN KEY (`specialty_id`) REFERENCES `specialties` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE UNIQUE (`username`, `specialty_id`)
+    CONSTRAINT `fk_doctor_specialties_specialty` FOREIGN KEY (`specialty_id`) REFERENCES `specialties` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+    UNIQUE (`username`, `specialty_id`)
 );
 
 -- Table Facilities
 CREATE TABLE `facilities` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `name` VARCHAR(255) NOT NULL,
+
+    -- TODO: facility_admin column
+
     `address` VARCHAR(255) NOT NULL,
     `district_id` INT,
     `phone_number` VARCHAR(20),
+
     `rating_avg` DECIMAL(3, 2),
     `rating_count` INT DEFAULT 0,
+
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (`district_id`) REFERENCES `districts` (`id`) ON DELETE RESTRICT
+    CONSTRAINT `fk_facilities_district` FOREIGN KEY (`district_id`) REFERENCES `districts` (`id`) ON DELETE RESTRICT
 );
 
 -- Table Facilities Hours
 CREATE TABLE `facility_hours` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `facility_id` BIGINT NOT NULL,
+
     `day_of_week` ENUM(
         'monday',
         'tuesday',
@@ -137,13 +218,18 @@ CREATE TABLE `facility_hours` (
         'saturday',
         'sunday'
     ) NOT NULL,
+
     `open_time` TIME NOT NULL,
     `close_time` TIME NOT NULL,
+    
     `break_start_time` TIME,
     `break_end_time` TIME,
+
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
+
     CONSTRAINT `fk_facility_hours_facility` FOREIGN KEY (`facility_id`) REFERENCES `facilities` (`id`) ON DELETE CASCADE,
+    
     CHECK (
         `break_start_time` < `break_end_time`
     ),
@@ -153,8 +239,11 @@ CREATE TABLE `facility_hours` (
 -- Table Practice Schedule
 CREATE TABLE `schedules` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+
     `doctor_username` VARCHAR(50) NOT NULL,
     `facility_id` BIGINT NOT NULL,
+    `notes` TEXT,
+
     `day_of_week` ENUM(
         'monday',
         'tuesday',
@@ -164,29 +253,42 @@ CREATE TABLE `schedules` (
         'saturday',
         'sunday'
     ) NOT NULL,
+
     `start_time` TIME NOT NULL,
     `end_time` TIME NOT NULL,
-    `slot_duration_minutes` INT DEFAULT 30,
-    `max_patients` INT,
+
     `break_start_time` TIME,
     `break_end_time` TIME,
+
+    `slot_duration_minutes` INT DEFAULT 30,
+    `max_patients` INT,
+
     `consultation_fee` DECIMAL(10, 2),
-    `notes` TEXT,
+
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT `fk_schedules_doctor` FOREIGN KEY (`doctor_username`) REFERENCES `doctors` (`username`) ON DELETE CASCADE,
+    CONSTRAINT `fk_schedules_facility` FOREIGN KEY (`facility_id`) REFERENCES `facilities` (`id`) ON DELETE CASCADE,
+
     CHECK (
         `break_start_time` < `break_end_time`
     ),
     CHECK (`start_time` < `end_time`)
 );
 
+-- Table Appointments
 CREATE TABLE `appointments` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+
     `member_username` VARCHAR(50) NOT NULL,
     `schedule_id` BIGINT NOT NULL,
+
     `appointment_date` DATE NOT NULL,
     `appointment_time` TIME NOT NULL,
+
     `queue_order` INT NOT NULL,
+
     `status` ENUM(
         'pending',
         'confirmed',
@@ -194,13 +296,19 @@ CREATE TABLE `appointments` (
         'cancelled',
         'no_show'
     ) DEFAULT 'pending',
+
     `notes` TEXT,
+
     `check_in_time` DATETIME,
     `completed_time` DATETIME,
+
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP,
+
     CONSTRAINT `fk_appointments_member` FOREIGN KEY (`member_username`) REFERENCES `members` (`username`) ON DELETE CASCADE,
     CONSTRAINT `fk_appointments_schedule` FOREIGN KEY (`schedule_id`) REFERENCES `schedules` (`id`) ON DELETE CASCADE,
+
     UNIQUE (
         `schedule_id`,
         `appointment_date`,
@@ -213,20 +321,146 @@ CREATE TABLE `appointments` (
     )
 );
 
--- TODO: Table online_sessions
--- TODO: Table consult_sessions
--- TODO: Table chat
--- TODO:
+-- Table Online Sessions
+CREATE TABLE `online_sessions` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `doctor_username` VARCHAR(50) NOT NULL,
+
+    `start_time` DATETIME NOT NULL,
+    `end_time` DATETIME,
+
+    `consultation_fee` DECIMAL(9, 2) NOT NULL,
+    `description` TEXT NOT NULL,
+
+    CONSTRAINT `fk_online_session_doctors` FOREIGN KEY (`doctor_username`) REFERENCES `doctors` (`username`) ON DELETE CASCADE
+);
+
+-- Table Consultations
+CREATE TABLE `consultations` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `online_session_id` BIGINT NOT NULL,
+    `member_username` VARCHAR(50) NOT NULL,
+
+    `start_time` DATETIME NOT NULL,
+    `end_time` DATETIME,
+
+    `notes` TEXT,
+    `paid_at` DATETIME NULL,
+
+    CONSTRAINT `fk_consultations_session` FOREIGN KEY (`online_session_id`) REFERENCES `online_sessions` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_consultations_member` FOREIGN KEY (`member_username`) REFERENCES `members` (`username`) ON DELETE CASCADE
+);
+
+-- Table Chat
+CREATE TABLE `chats` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `consultation_id` BIGINT NOT NULL,
+
+    `message` TEXT NOT NULL,
+    `sender` VARCHAR(50) NOT NULL,
+
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT `fk_chats_sender` FOREIGN KEY (`sender`) REFERENCES `users` (`username`) ON DELETE CASCADE,
+    CONSTRAINT `fk_chats_consultation` FOREIGN KEY (`consultation_id`) REFERENCES `consultations` (`id`) ON DELETE CASCADE
+);
+
+-- Table Prescriptions
+CREATE TABLE `prescriptions` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+
+    `appointment_id` BIGINT NULL,
+    `consultation_id` BIGINT NULL,
+
+    `notes` TEXT,
+
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT `fk_prescriptions_appointment` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_prescriptions_consultation` FOREIGN KEY (`consultation_id`) REFERENCES `consultations` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_prescriptions_doctor` FOREIGN KEY (`doctor_username`) REFERENCES `doctors` (`username`) ON DELETE CASCADE,
+    CONSTRAINT `fk_prescriptions_member` FOREIGN KEY (`member_username`) REFERENCES `members` (`username`) ON DELETE CASCADE,
+
+    CHECK (
+        `appointment_id` IS NOT NULL
+        OR `consultation_id` IS NOT NULL
+    )
+);
+
+-- Table Prescription Details
+CREATE TABLE `prescription_details` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `prescription_id` BIGINT NOT NULL,
+
+    `medicine_id` BIGINT NOT NULL,
+    `quantity` INT NOT NULL,
+
+    `start` DATE NOT NULL,
+    `end` DATE NOT NULL,
+
+    `taken` DATETIME NULL,
+    `taken_at` BIGINT NULL,
+
+    `instructions` VARCHAR(255), 
+
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
+    
+    CONSTRAINT `fk_prescription_details_prescription` FOREIGN KEY (`prescription_id`) REFERENCES `prescriptions` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_prescription_details_medicine` FOREIGN KEY (`medicine_id`) REFERENCES `medicines` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_prescription_details_facility` FOREIGN KEY (`taken_at`) REFERENCES `facilities` (`id`) ON DELETE RESTRICT
+);
+
+
+-- Table Article Topics
+CREATE TABLE `article_topics`(
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(100) NOT NULL UNIQUE
+);
+
+-- Table Articles
+CREATE TABLE `articles` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `created_by` VARCHAR(50) NOT NULL,
+
+    `content` TEXT NOT NULL,
+
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL,
+
+    
+    CONSTRAINT `fk_article_users` FOREIGN KEY (`created_by`) REFERENCES `users` (`username`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_article_topics` FOREIGN KEY (`topic_id`) REFERENCES `article_topics` (`id`) ON DELETE RESTRICT,
+);
+
+-- TODO: Table Articles Images
+
 
 -- Indexes
-CREATE INDEX idx_schedules_doctor ON schedules (doctor_username);
+CREATE INDEX `idx_schedules_doctor` ON `schedules` (`doctor_username`);
 
-CREATE INDEX idx_schedules_facility ON schedules (facility_id);
+CREATE INDEX `idx_schedules_facility` ON `schedules` (`facility_id`);
 
-CREATE INDEX idx_schedules_day ON schedules (day_of_week);
+CREATE INDEX `idx_schedules_day` ON `schedules` (`day_of_week`);
 
-CREATE INDEX idx_appointments_member ON appointments (member_username);
+CREATE INDEX `idx_appointments_member` ON `appointments` (`member_username`);
 
-CREATE INDEX idx_appointments_schedule ON appointments (schedule_id);
+CREATE INDEX `idx_appointments_schedule` ON `appointments` (`schedule_id`);
 
-CREATE INDEX idx_appointments_date ON appointments (appointment_date);
+CREATE INDEX `idx_appointments_date` ON `appointments` (`appointment_date`);
+
+CREATE INDEX `idx_members_district` ON `members` (`district_id`);
+
+CREATE INDEX `idx_medical_histories_member` ON `medical_histories` (`member_username`);
+
+CREATE INDEX `idx_member_allergies_member` ON `member_allergies` (`member_username`);
+
+CREATE INDEX `idx_member_allergies_allergen` ON `member_allergies` (`allergen_id`);
+
+CREATE INDEX `idx_facility_hours_facility` ON `facility_hours` (`facility_id`);
+
+CREATE INDEX `idx_prescriptions_member` ON `prescriptions` (`member_username`);
+
+CREATE INDEX `idx_prescriptions_doctor` ON `prescriptions` (`doctor_username`);
