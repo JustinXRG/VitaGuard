@@ -24,6 +24,11 @@ class DatabaseSeeder extends Seeder
             DistrictSeeder::class,
             ArticleTopicSeeder::class,
             UserSeeder::class,
+            ArticleSeeder::class,
+            MemberSeeder::class,
+            MedicalHistorySeeder::class,
+            AllergenSeeder::class,
+            MemberAllergiesSeeder::class
         ]);
     }
 }
