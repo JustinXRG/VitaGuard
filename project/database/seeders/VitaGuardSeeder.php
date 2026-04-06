@@ -45,7 +45,8 @@ class VitaGuardSeeder extends Seeder
      */
     protected function openCSV(string $filePath)
     {
-        $fullPath = storage_path($filePath);
+        // $fullPath = storage_path($filePath);
+        $fullPath = database_path('seeders/values/'.$filePath);
 
         if (!file_exists($fullPath)) {
             throw new Exception(
