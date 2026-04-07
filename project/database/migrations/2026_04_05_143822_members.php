@@ -20,12 +20,7 @@ return new class extends Migration
             $table->enum('gender', ['male', 'female']);
             $table->date('date_of_birth');
             $table->string('address', 255);
-            $table->unsignedBigInteger('district_id');
-            $table->enum('blood_type', ['A-', 'A+', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'])->nullable();
-            $table->decimal('weight_kg', 5, 2);
-            $table->decimal('height_cm', 5, 2);
-            $table->enum('smoking_status', ['never', 'former', 'current']);
-            $table->enum('alcohol_consumption', ['none', 'light', 'moderate', 'heavy']);            
+            $table->unsignedBigInteger('district_id');                
             $table->foreign('username')->references('username')->on('users')->cascadeOnDelete()->cascadeOnUpdate();
             $table->foreign('district_id')->references('id')->on('districts')->restrictOnDelete()->cascadeOnUpdate();
             $table->timestamps();

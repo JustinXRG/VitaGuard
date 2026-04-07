@@ -28,7 +28,8 @@ class DatabaseSeeder extends Seeder
             MemberSeeder::class,
             MedicalHistorySeeder::class,
             AllergenSeeder::class,
-            MemberAllergiesSeeder::class
+            MemberAllergiesSeeder::class,
+            MemberMedicalProfileSeeder::class
         ]);
     }
 }

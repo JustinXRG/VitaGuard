@@ -20,9 +20,9 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->timestamps();
             $table->softDeletes();
-            $table->foreign('member_username')->references('username')->on('members')->cascadeOnDelete()->cascadeOnUpdate();
+            $table->foreign('member_username')->references('username')->on('members')->cascadeOnUpdate();
             $table->foreign('allergen_id')->references('id')->on('allergens')->restrictOnDelete()->cascadeOnUpdate();
-            $table->foreign('inputted_by')->references('username')->on('users')->cascadeOnDelete()->cascadeOnUpdate();
+            $table->foreign('inputted_by')->references('username')->on('users')->cascadeOnUpdate();
         });
     }
 
