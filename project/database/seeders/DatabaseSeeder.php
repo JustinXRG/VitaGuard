@@ -42,8 +42,8 @@ class DatabaseSeeder extends Seeder
             OnlineSessionSeeder::class,
             ConsultationSeeder::class,
             ChatSeeder::class,
-            PrescriptionSeeder::class,
-            PrescriptionDetailsSeeder::class,
+            PrescriptionSeeder::class,            
+            PrescriptionDetailSeeder::class,
         ]);
     }
 }
