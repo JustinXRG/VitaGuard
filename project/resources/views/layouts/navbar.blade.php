@@ -1,4 +1,4 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-transparent navbar-custom">
+<nav id="navbar" class="navbar navbar-expand-lg navbar-dark bg-transparent navbar-custom">
     <a class="navbar-brand" href="#">
         <b>Vita</b>Guard
     </a>

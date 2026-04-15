@@ -54,5 +54,33 @@
 </div>
 
 <div class="container">
-    <h5>Artikel Kesehatan Terkini untuk Anda</h5>
+    <div class="row">
+        @foreach ($dataTables as $tableName => $rows)
+        <div class="col-6 mb-4">
+            <h5>TABLE {{ $tableName }}</h5>
+            <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                <table class="table table-striped table-bordered">
+                    <thead>
+                        <tr>
+                            @if(count($rows) > 0)
+                            @foreach(array_keys($rows[0]->toArray()) as $column)
+                            <th>{{ $column }}</th>
+                            @endforeach
+                            @endif
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($rows as $row)
+                        <tr>
+                            @foreach ($row->toArray() as $value)
+                            <td>{{ $value }}</td>
+                            @endforeach
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @endforeach
+    </div>
 </div>

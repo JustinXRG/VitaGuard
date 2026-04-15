@@ -25,11 +25,11 @@
 
         .container {
             margin-top: 24px;
-        }        
+        }
 
         /* Biar navbar sm carousel ga overlap */
         .navbar {
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
@@ -40,10 +40,36 @@
         .navbar-brand {
             color: #000000;
         }
+
+        .navbar {
+            transition: all 0.8s ease;
+        }
+
+        .navbar.scrolled {
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
 
 <body>
+    <!-- Change navbar style class when scrolled -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const navbar = document.getElementById("navbar");
+
+            window.addEventListener("scroll", function() {
+                if (window.scrollY > 10) {
+                    navbar.classList.add("scrolled");
+                    navbar.classList.remove("navbar-dark", "bg-transparent");
+                    navbar.classList.add("navbar-light", "bg-white");
+                } else {
+                    navbar.classList.remove("scrolled");
+                    navbar.classList.remove("navbar-light", "bg-white");
+                    navbar.classList.add("navbar-dark", "bg-transparent");
+                }
+            });
+        });
+    </script>
     @include('layouts.navbar')
 
     @yield('content')
